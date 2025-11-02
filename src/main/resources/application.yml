@@ -1,0 +1,36 @@
+server:
+  port: 8084  # 💡 Hindari bentrok dengan service lain
+
+spring:
+  application:
+    name: data-science-service
+  jackson:
+    serialization:
+      INDENT_OUTPUT: true
+  main:
+    banner-mode: console
+
+dataset:
+  raw-path: dataset/raw
+
+integration:
+  inventory-service:
+    url: http://inventory-service:8080/api/inventory/movements/export/summary
+  retail-service:
+    url: http://retail-service:8081/api/orders/export
+
+logging:
+  level:
+    root: INFO
+    com.agnesmaria.datascience: DEBUG
+  file:
+    name: logs/data-science-service.log
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: always
