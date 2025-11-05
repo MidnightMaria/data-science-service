@@ -1,5 +1,6 @@
 HELP.md
 target/
+data/processed/*.csv
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
@@ -32,5 +33,3 @@ build/
 ### VS Code ###
 .vscode/
 
-# ignore processed data
-.data/processed/*.csv
