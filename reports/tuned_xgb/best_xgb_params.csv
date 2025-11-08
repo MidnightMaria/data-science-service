@@ -1,0 +1,2 @@
+colsample_bytree,gamma,learning_rate,max_depth,n_estimators,reg_lambda,subsample
+0.7,0,0.05,7,100,5,1.0
