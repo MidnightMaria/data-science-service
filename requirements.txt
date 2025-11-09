@@ -9,3 +9,5 @@ uvicorn
 joblib
 statsmodels
 xgboost
+streamlit
+plotly
