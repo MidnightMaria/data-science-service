@@ -16,8 +16,10 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 
+# 🔧 Pastikan semua folder dataset & processed dibuat dan writable
+RUN mkdir -p /app/data/processed /app/data/raw /app/dataset/raw && chmod -R 777 /app/data
+
 COPY --from=build /app/target/*.jar app.jar
-RUN mkdir -p /app/dataset/raw
 
 EXPOSE 8084
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -1,6 +1,7 @@
 package com.agnesmaria.datascience.controller;
 
 import com.agnesmaria.datascience.service.DataFetchService;
+import com.agnesmaria.datascience.service.DataExportService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -8,10 +9,13 @@ import org.springframework.web.bind.annotation.*;
 public class IntegrationController {
 
     private final DataFetchService dataFetchService;
+    private final DataExportService dataExportService;
+
 
     // ✅ Manual constructor agar Spring bisa inject bean tanpa Lombok
-    public IntegrationController(DataFetchService dataFetchService) {
+    public IntegrationController(DataFetchService dataFetchService, DataExportService dataExportService) {
         this.dataFetchService = dataFetchService;
+        this.dataExportService = dataExportService;
     }
 
     @GetMapping("/fetch-inventory")
@@ -28,4 +32,9 @@ public class IntegrationController {
     public String fetchAll() {
         return dataFetchService.fetchAll();
     }
+    @GetMapping("/export-csv")
+    public String exportCSV() {
+        return dataExportService.exportToCSV();
+    }
+
 }

@@ -1,0 +1,5 @@
+2025-11-09T14:03:23.249+07:00  INFO 18556 --- [data-science-service] [main] c.a.d.DataScienceServiceApplicationTests : Starting DataScienceServiceApplicationTests using Java 24 with PID 18556 (started by agnes in C:\Users\Project\supply-chain\data-science-service)
+2025-11-09T14:03:23.251+07:00 DEBUG 18556 --- [data-science-service] [main] c.a.d.DataScienceServiceApplicationTests : Running with Spring Boot v3.3.4, Spring v6.1.13
+2025-11-09T14:03:23.253+07:00  INFO 18556 --- [data-science-service] [main] c.a.d.DataScienceServiceApplicationTests : No active profile set, falling back to 1 default profile: "default"
+2025-11-09T14:03:30.331+07:00  INFO 18556 --- [data-science-service] [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2025-11-09T14:03:30.670+07:00  INFO 18556 --- [data-science-service] [main] c.a.d.DataScienceServiceApplicationTests : Started DataScienceServiceApplicationTests in 9.026 seconds (process running for 16.682)
