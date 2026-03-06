@@ -2,9 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 
-# ============================================================
 # Configuration
-# ============================================================
 
 Z = 1.65            # Z-score for 95% service level
 ORDERING_COST = 50  # ordering cost per order
@@ -12,9 +10,7 @@ HOLDING_COST = 2    # holding cost per unit per year
 LEAD_TIME_DAYS = 7  # lead time in days
 DAYS_IN_YEAR = 365
 
-# ============================================================
 # Paths
-# ============================================================
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -28,16 +24,16 @@ output_path = os.path.join(output_dir, "inventory_optimization_report.csv")
 print("Loading forecast data...")
 df = pd.read_csv(input_path)
 
-# ============================================================
+
 # Validate Columns
-# ============================================================
+
 
 if "hybrid_forecast" not in df.columns:
     raise ValueError("Column 'hybrid_forecast' not found in forecast data")
 
-# ============================================================
+
 # Aggregate Demand Forecast
-# ============================================================
+
 
 print("Aggregating demand...")
 
@@ -52,9 +48,9 @@ agg = (
     })
 )
 
-# ============================================================
+
 # Inventory Calculations
-# ============================================================
+
 
 print("Calculating Safety Stock, ROP, EOQ...")
 
@@ -73,15 +69,25 @@ agg["eoq"] = np.sqrt((2 * agg["annual_demand"] * ORDERING_COST) / HOLDING_COST)
 # Optimal Stock Level
 agg["optimal_stock_level"] = agg["reorder_point"] + agg["eoq"]
 
-# ============================================================
+
 # Decision Support Logic
-# ============================================================
+
 
 print("Generating decision support recommendations...")
 
-# Simulated current stock (replace with real data if available)
+
+# Simulated Current Stock
+
+
 np.random.seed(42)
-agg["current_stock"] = np.random.randint(0, 200, size=len(agg))
+
+stock_min = (agg["reorder_point"] * 0.5).astype(int)
+stock_max = (agg["optimal_stock_level"] * 1.2).astype(int)
+
+agg["current_stock"] = [
+    np.random.randint(low, high)
+    for low, high in zip(stock_min, stock_max)
+]
 
 # Status determination
 agg["status"] = np.where(
@@ -94,6 +100,16 @@ agg["status"] = np.where(
     )
 )
 
+agg["risk_level"] = np.where(
+    agg["current_stock"] < agg["reorder_point"] * 0.7,
+    "CRITICAL",
+    np.where(
+        agg["current_stock"] <= agg["reorder_point"],
+        "LOW STOCK",
+        "NORMAL"
+    )
+)
+
 # Recommended order quantity
 agg["recommended_order_qty"] = np.where(
     agg["status"] == "ORDER NOW",
@@ -101,9 +117,7 @@ agg["recommended_order_qty"] = np.where(
     0
 )
 
-# ============================================================
 # Cost Estimation
-# ============================================================
 
 agg["holding_cost_est"] = agg["current_stock"] * HOLDING_COST
 agg["ordering_cost_est"] = np.where(
@@ -114,9 +128,7 @@ agg["ordering_cost_est"] = np.where(
 
 agg["total_cost_est"] = agg["holding_cost_est"] + agg["ordering_cost_est"]
 
-# ============================================================
 # Cleanup and Save
-# ============================================================
 
 agg = agg.round(2)
 

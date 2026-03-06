@@ -12,7 +12,7 @@ public class DataScienceServiceApplication {
         SpringApplication.run(DataScienceServiceApplication.class, args);
     }
 
-    // ✅ Tambahkan ini untuk mendaftarkan RestTemplate ke Spring context
+    //  Tambahkan ini untuk mendaftarkan RestTemplate ke Spring context
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();

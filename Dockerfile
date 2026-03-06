@@ -1,5 +1,5 @@
 # ==========================================
-# 🧠 Data Science Service Dockerfile (final)
+# Data Science Service Dockerfile (final)
 # ==========================================
 
 # Stage 1: Build Spring Boot JAR
