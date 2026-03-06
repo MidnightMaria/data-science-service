@@ -10,7 +10,7 @@ public class IntegrationConfig {
     private ServiceConfig inventoryService;
     private ServiceConfig retailService;
 
-    // ✅ Getter & Setter manual agar tetap aman walau tanpa Lombok
+    // Getter & Setter manual agar tetap aman walau tanpa Lombok
     public ServiceConfig getInventoryService() {
         return inventoryService;
     }

@@ -12,7 +12,7 @@ public class IntegrationController {
     private final DataExportService dataExportService;
 
 
-    // ✅ Manual constructor agar Spring bisa inject bean tanpa Lombok
+    // Manual constructor agar Spring bisa inject bean tanpa Lombok
     public IntegrationController(DataFetchService dataFetchService, DataExportService dataExportService) {
         this.dataFetchService = dataFetchService;
         this.dataExportService = dataExportService;

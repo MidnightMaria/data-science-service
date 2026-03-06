@@ -32,19 +32,19 @@ public class DataExportService {
         log.info("🚀 Fetching and exporting data from Inventory and Retail services...");
 
         try {
-            // ✅ Fetch data dari kedua service
+            // Fetch data dari kedua service
             String inventoryJson = restTemplate.getForObject(
                     integrationConfig.getInventoryService().getUrl(), String.class);
             String retailJson = restTemplate.getForObject(
                     integrationConfig.getRetailService().getUrl(), String.class);
 
-            // ✅ Convert JSON string → List of Map
+            // Convert JSON string → List of Map
             List<Map<String, Object>> inventoryData =
                     mapper.readValue(inventoryJson, new TypeReference<>() {});
             List<Map<String, Object>> retailData =
                     mapper.readValue(retailJson, new TypeReference<>() {});
 
-            // ✅ Simpan ke CSV
+            // Simpan ke CSV
             String inventoryPath = "data/processed/inventory_data.csv";
             String retailPath = "data/processed/retail_data.csv";
 
@@ -52,20 +52,20 @@ public class DataExportService {
             saveAsCSV(retailData, retailPath);
 
             return String.format("""
-                    ✅ Export success!
+                    Export success!
                     Inventory CSV: %s
                     Retail CSV: %s
                     """, inventoryPath, retailPath);
 
         } catch (Exception e) {
-            log.error("❌ Error exporting data to CSV", e);
-            return "❌ Failed to export data: " + e.getMessage();
+            log.error("Error exporting data to CSV", e);
+            return "Failed to export data: " + e.getMessage();
         }
     }
 
     private void saveAsCSV(List<Map<String, Object>> data, String path) throws IOException {
         if (data.isEmpty()) {
-            log.warn("⚠️ No data to save for {}", path);
+            log.warn("No data to save for {}", path);
             return;
         }
 
@@ -84,6 +84,6 @@ public class DataExportService {
                 writer.writeNext(values);
             }
         }
-        log.info("💾 CSV saved to {}", path);
+        log.info("CSV saved to {}", path);
     }
 }

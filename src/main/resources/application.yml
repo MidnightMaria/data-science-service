@@ -1,5 +1,5 @@
 server:
-  port: 8084  # 💡 Hindari bentrok dengan service lain
+  port: 8084  #Hindari bentrok dengan service lain
 
 spring:
   application:
