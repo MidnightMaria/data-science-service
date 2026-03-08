@@ -51,7 +51,7 @@ def main():
     # =============================
     # FORECASTING
     # =============================
-    print("\n🔮 Forecasting future 90 days...")
+    print("\nForecasting future 90 days...")
     future = model.make_future_dataframe(periods=90)
     forecast = model.predict(future)
 
