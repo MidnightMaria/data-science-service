@@ -25,7 +25,7 @@ MODEL_PATH = MODELDIR / f"prophet_store{EXAMPLE_STORE}_item{EXAMPLE_ITEM}.joblib
 # MAIN FUNCTION
 # =============================
 def main():
-    print("📦 Loading data & model...")
+    print("Loading data & model...")
 
     df = pd.read_csv(PROCESSED_PATH, parse_dates=["date"])
     model = load(MODEL_PATH)
@@ -34,14 +34,14 @@ def main():
     one = df[(df["store"] == EXAMPLE_STORE) & (df["item"] == EXAMPLE_ITEM)].copy()
     one = one.rename(columns={"date": "ds", "sales": "y"})[["ds", "y"]]
 
-    print(f"📊 Evaluating Store {EXAMPLE_STORE}, Item {EXAMPLE_ITEM}...")
+    print(f"Evaluating Store {EXAMPLE_STORE}, Item {EXAMPLE_ITEM}...")
 
     # Split 90 hari terakhir untuk testing
     train = one.iloc[:-90]
     test = one.iloc[-90:]
 
     # Re-train Prophet di data training saja (fresh instance)
-    print("🚀 Training fresh Prophet model for evaluation...")
+    print("Training fresh Prophet model for evaluation...")
     from prophet import Prophet
     eval_model = Prophet(
         yearly_seasonality=True,
@@ -79,7 +79,7 @@ def main():
 
     metrics.to_csv(OUTDIR / f"metrics_store{EXAMPLE_STORE}_item{EXAMPLE_ITEM}.csv", index=False)
 
-    print("\n✅ Evaluation complete!")
+    print("\nEvaluation complete!")
     print(metrics)
 
     # =============================
@@ -97,7 +97,7 @@ def main():
     plt.savefig(OUTDIR / f"plot_forecast_vs_actual_store{EXAMPLE_STORE}_item{EXAMPLE_ITEM}.png", dpi=150)
     plt.close()
 
-    print(f"📁 Metrics & plots saved to: {OUTDIR}")
+    print(f"Metrics & plots saved to: {OUTDIR}")
 
 
 if __name__ == "__main__":

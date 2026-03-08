@@ -24,7 +24,7 @@ EXAMPLE_ITEM = 1
 # MAIN PIPELINE
 # =============================
 def main():
-    print("📦 Loading processed dataset...")
+    print("Loading processed dataset...")
     df = pd.read_csv(DATA_PATH, parse_dates=["date"])
     print(df.head())
 
@@ -33,13 +33,13 @@ def main():
 
     # Prophet butuh format kolom: ds (datetime) dan y (nilai target)
     one = one.rename(columns={"date": "ds", "sales": "y"})[["ds", "y"]]
-    print(f"\n📈 Data untuk Store {EXAMPLE_STORE}, Item {EXAMPLE_ITEM}")
+    print(f"\nData untuk Store {EXAMPLE_STORE}, Item {EXAMPLE_ITEM}")
     print(one.head())
 
     # =============================
-    # 1️⃣ TRAINING MODEL
+    # TRAINING MODEL
     # =============================
-    print("\n🚀 Training Prophet model...")
+    print("\nTraining Prophet model...")
     model = Prophet(
         yearly_seasonality=True,
         weekly_seasonality=True,
@@ -49,16 +49,16 @@ def main():
     model.fit(one)
 
     # =============================
-    # 2️⃣ FORECASTING
+    # FORECASTING
     # =============================
     print("\n🔮 Forecasting future 90 days...")
     future = model.make_future_dataframe(periods=90)
     forecast = model.predict(future)
 
     # =============================
-    # 3️⃣ VISUALIZATION
+    # VISUALIZATION
     # =============================
-    print("\n📊 Plotting forecast results...")
+    print("\nPlotting forecast results...")
     fig1 = model.plot(forecast)
     plt.title(f"Prophet Forecast — Store {EXAMPLE_STORE}, Item {EXAMPLE_ITEM}")
     plt.xlabel("Date")
@@ -71,13 +71,13 @@ def main():
     plt.savefig(OUTDIR / f"plot_components_store{EXAMPLE_STORE}_item{EXAMPLE_ITEM}.png", dpi=150)
 
     # =============================
-    # 4️⃣ SAVE MODEL & FORECAST
+    # SAVE MODEL & FORECAST
     # =============================
-    print("\n💾 Saving model and forecast results...")
+    print("\nSaving model and forecast results...")
     dump(model, MODELDIR / f"prophet_store{EXAMPLE_STORE}_item{EXAMPLE_ITEM}.joblib")
     forecast.to_csv(OUTDIR / f"forecast_store{EXAMPLE_STORE}_item{EXAMPLE_ITEM}.csv", index=False)
 
-    print("\n✅ Training complete! Check your reports folder for plots and forecasts.")
+    print("\nTraining complete! Check your reports folder for plots and forecasts.")
 
 
 if __name__ == "__main__":

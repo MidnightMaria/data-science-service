@@ -18,12 +18,12 @@ OUTDIR = ROOT / "reports" / "final_evaluation"
 OUTDIR.mkdir(parents=True, exist_ok=True)
 
 def main():
-    print("📦 Loading data and tuned model...")
+    print("Loading data and tuned model...")
     df = pd.read_csv(HYBRID_TRAIN, parse_dates=["date"])
     metrics = pd.read_csv(HYBRID_METRICS)
     model = joblib.load(TUNED_MODEL)
 
-    print("🔍 Evaluating tuned hybrid model performance...")
+    print("Evaluating tuned hybrid model performance...")
     results = []
     for (store, item), group in df.groupby(["store", "item"]):
         group = group.sort_values("date")
@@ -63,8 +63,8 @@ def main():
     merged = metrics.merge(result_df, on=["store", "item"], how="left")
     merged.to_csv(OUTDIR / "final_model_comparison.csv", index=False)
 
-    print(f"✅ Final comparison saved to: {OUTDIR / 'final_model_comparison.csv'}")
-    print("📊 Sample preview:")
+    print(f"Final comparison saved to: {OUTDIR / 'final_model_comparison.csv'}")
+    print("Sample preview:")
     print(merged.head())
 
 if __name__ == "__main__":

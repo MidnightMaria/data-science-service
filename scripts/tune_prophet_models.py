@@ -44,12 +44,12 @@ def main():
     metrics = pd.read_csv(METRICS_PATH)
     to_tune = metrics[metrics["MAPE (%)"] > 25]
 
-    print(f"🔧 Menemukan {len(to_tune)} kombinasi yang perlu di-tune...")
+    print(f"Menemukan {len(to_tune)} kombinasi yang perlu di-tune...")
 
     tuned_results = []
     for _, row in to_tune.iterrows():
         s, i = row["store"], row["item"]
-        print(f"⚙️ Tuning Store {s}, Item {i}...")
+        print(f"Tuning Store {s}, Item {i}...")
 
         mae, rmse, mape = evaluate_prophet(
             df, s, i,
@@ -63,11 +63,11 @@ def main():
             "store": s, "item": i,
             "MAE_tuned": mae, "RMSE_tuned": rmse, "MAPE_tuned (%)": mape
         })
-        print(f"✅ MAPE baru: {mape:.2f}%")
+        print(f"MAPE baru: {mape:.2f}%")
 
     tuned_df = pd.DataFrame(tuned_results)
     tuned_df.to_csv(OUTDIR / "tuned_metrics.csv", index=False)
-    print(f"\n✨ Selesai! Disimpan ke {OUTDIR / 'tuned_metrics.csv'}")
+    print(f"\nSelesai! Disimpan ke {OUTDIR / 'tuned_metrics.csv'}")
 
 
 if __name__ == "__main__":

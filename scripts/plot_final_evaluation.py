@@ -22,9 +22,9 @@ def main():
     avg_hybrid = df["Hybrid_MAPE"].mean()
     avg_tuned = df["Hybrid_Tuned_MAPE"].mean()
 
-    print(f"📈 Prophet avg MAPE: {avg_prophet:.2f}%")
-    print(f"🔧 Hybrid avg MAPE: {avg_hybrid:.2f}%")
-    print(f"🚀 Tuned Hybrid avg MAPE: {avg_tuned:.2f}%")
+    print(f"Prophet avg MAPE: {avg_prophet:.2f}%")
+    print(f"Hybrid avg MAPE: {avg_hybrid:.2f}%")
+    print(f"Tuned Hybrid avg MAPE: {avg_tuned:.2f}%")
 
     # Hitung improvement per item
     df["Improvement_Hybrid_vs_Prophet"] = df["Prophet_MAPE"] - df["Hybrid_MAPE"]
@@ -34,9 +34,9 @@ def main():
     total = len(df)
     improved_pct = (improved_count / total) * 100
 
-    print(f"✨ {improved_count}/{total} items improved ({improved_pct:.2f}%) after tuning.")
+    print(f"{improved_count}/{total} items improved ({improved_pct:.2f}%) after tuning.")
 
-    # 1️⃣ Bar chart rata-rata MAPE per model
+    # Bar chart rata-rata MAPE per model
     plt.figure(figsize=(6, 4))
     plt.bar(["Prophet", "Hybrid", "Hybrid Tuned"], [avg_prophet, avg_hybrid, avg_tuned], color=["#e6a5a1", "#a7c7e7", "#f3d1a9"])
     plt.title("Average MAPE Comparison")
@@ -45,7 +45,7 @@ def main():
     plt.savefig(OUTDIR / "avg_mape_comparison.png", dpi=150)
     plt.close()
 
-    # 2️⃣ Line chart tren per model (contoh untuk 10 item pertama)
+    # Line chart tren per model (contoh untuk 10 item pertama)
     plt.figure(figsize=(10, 5))
     subset = df.head(10)
     plt.plot(subset["item"], subset["Prophet_MAPE"], marker="o", label="Prophet", color="#e6a5a1")
@@ -59,7 +59,7 @@ def main():
     plt.savefig(OUTDIR / "mape_per_item_trend.png", dpi=150)
     plt.close()
 
-    # 3️⃣ Histogram improvement
+    # Histogram improvement
     plt.figure(figsize=(6,4))
     plt.hist(df["Improvement_Tuned_vs_Hybrid"], bins=15, color="#f3d1a9", edgecolor="black")
     plt.title("Distribution of Improvement (Tuned vs Hybrid)")
@@ -69,7 +69,7 @@ def main():
     plt.savefig(OUTDIR / "improvement_distribution.png", dpi=150)
     plt.close()
 
-    print(f"✅ Visualizations saved to: {OUTDIR}")
+    print(f" Visualizations saved to: {OUTDIR}")
 
 if __name__ == "__main__":
     main()

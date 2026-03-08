@@ -62,7 +62,7 @@ def add_time_features(df):
 # MAIN PIPELINE
 # =======================
 def main():
-    print("📦 Loading raw data...")
+    print("Loading raw data...")
     df = pd.read_csv(DATA_PATH, parse_dates=["date"])
     all_forecasts = []
 
@@ -77,13 +77,13 @@ def main():
             all_forecasts.append(fc)
 
     combined = pd.concat(all_forecasts, ignore_index=True)
-    print("✨ Adding time-based features...")
+    print("Adding time-based features...")
     combined = add_time_features(combined)
 
     # simpan hasil hybrid dataset
     output_file = OUTDIR / "hybrid_train.csv"
     combined.to_csv(output_file, index=False)
-    print(f"✅ Hybrid features saved to: {output_file}")
+    print(f"Hybrid features saved to: {output_file}")
 
 
 if __name__ == "__main__":

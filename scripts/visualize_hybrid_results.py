@@ -16,9 +16,9 @@ OUTDIR.mkdir(parents=True, exist_ok=True)
 
 # ========= LOAD =========
 df = pd.read_csv(DATA_PATH)
-print(f"📦 Loaded metrics data: {df.shape[0]} rows")
+print(f"Loaded metrics data: {df.shape[0]} rows")
 
-# ========= 1️⃣ Scatter Plot Prophet vs Hybrid (MAPE) =========
+# ========= Scatter Plot Prophet vs Hybrid (MAPE) =========
 plt.figure(figsize=(7,7))
 plt.scatter(df["Prophet_MAPE"], df["Hybrid_MAPE"], color="teal", alpha=0.7)
 plt.plot([0, max(df["Prophet_MAPE"])], [0, max(df["Prophet_MAPE"])], "--", color="gray")
@@ -27,9 +27,9 @@ plt.xlabel("Prophet MAPE (%)")
 plt.ylabel("Hybrid MAPE (%)")
 plt.tight_layout()
 plt.savefig(OUTDIR / "scatter_prophet_vs_hybrid_mape.png", dpi=150)
-print("✅ Scatter plot saved.")
+print("Scatter plot saved.")
 
-# ========= 2️⃣ Bar Chart: Average MAPE per Store =========
+# ========= Bar Chart: Average MAPE per Store =========
 avg_per_store = (
     df.groupby("store")[["Prophet_MAPE", "Hybrid_MAPE"]].mean().reset_index()
 )
@@ -45,9 +45,9 @@ plt.ylabel("Average MAPE (%)")
 plt.legend()
 plt.tight_layout()
 plt.savefig(OUTDIR / "bar_avg_mape_per_store.png", dpi=150)
-print("✅ Bar chart saved.")
+print("Bar chart saved.")
 
-# ========= 3️⃣ Delta Improvement Histogram =========
+# ========= Delta Improvement Histogram =========
 df["delta_mape"] = df["Prophet_MAPE"] - df["Hybrid_MAPE"]
 
 plt.figure(figsize=(7,5))
@@ -58,7 +58,7 @@ plt.xlabel("MAPE Improvement (%)")
 plt.ylabel("Number of Store-Item pairs")
 plt.tight_layout()
 plt.savefig(OUTDIR / "hist_mape_improvement.png", dpi=150)
-print("✅ Histogram saved.")
+print("Histogram saved.")
 
 # ========= SAVE SUMMARY =========
 improved = (df["delta_mape"] > 0).mean() * 100
@@ -71,6 +71,6 @@ summary = {
     "avg_hybrid_mape": df["Hybrid_MAPE"].mean(),
 }
 pd.Series(summary).to_json(OUTDIR / "hybrid_visual_summary.json", indent=2)
-print("📊 Summary saved:", summary)
+print("Summary saved:", summary)
 
-print(f"\n✨ Visualization complete! Check {OUTDIR}")
+print(f"\nVisualization complete! Check {OUTDIR}")

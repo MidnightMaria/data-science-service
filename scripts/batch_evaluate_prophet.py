@@ -66,7 +66,7 @@ def evaluate_prophet(store_id: int, item_id: int, df: pd.DataFrame):
 
 
 def main():
-    print("📦 Loading dataset...")
+    print("Loading dataset...")
     df = pd.read_csv(DATA_PATH, parse_dates=["date"])
     print(df.head())
 
@@ -75,7 +75,7 @@ def main():
     stores = df["store"].unique()
     items = df["item"].unique()
 
-    print(f"🔁 Evaluating {len(stores)} stores × {len(items)} items...")
+    print(f"Evaluating {len(stores)} stores × {len(items)} items...")
 
     for s in stores:
         for i in items:
@@ -88,23 +88,23 @@ def main():
                     "RMSE": rmse,
                     "MAPE (%)": mape
                 })
-                print(f"✅ Store {s} Item {i} done — MAPE: {mape:.2f}%")
+                print(f"Store {s} Item {i} done — MAPE: {mape:.2f}%")
 
             except Exception as e:
-                print(f"❌ Store {s} Item {i} failed: {e}")
+                print(f"Store {s} Item {i} failed: {e}")
 
     # Simpan hasil
     results_df = pd.DataFrame(results)
     results_df.to_csv(OUTDIR / "summary_metrics.csv", index=False)
 
-    print("\n✨ Evaluasi selesai!")
-    print(f"📁 Hasil disimpan di: {OUTDIR / 'summary_metrics.csv'}")
+    print("\nEvaluasi selesai!")
+    print(f"Hasil disimpan di: {OUTDIR / 'summary_metrics.csv'}")
 
     # Tampilkan top 5 dan worst 5
-    print("\n🏆 Top 5 Akurasi (MAPE terendah):")
+    print("\nTop 5 Akurasi (MAPE terendah):")
     print(results_df.sort_values("MAPE (%)").head(5))
 
-    print("\n⚠️ Worst 5 Akurasi (MAPE tertinggi):")
+    print("\nWorst 5 Akurasi (MAPE tertinggi):")
     print(results_df.sort_values("MAPE (%)", ascending=False).head(5))
 
 

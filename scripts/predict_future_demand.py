@@ -90,7 +90,7 @@ def plot_future_forecast(df, store, item):
 # MAIN
 # ===============================
 def main():
-    print("📦 Loading historical data...")
+    print("Loading historical data...")
     df = pd.read_csv(DATA_PATH, parse_dates=["date"])
     xgb_model: XGBRegressor = joblib.load(MODEL_PATH)
 
@@ -100,7 +100,7 @@ def main():
     all_results = []
     for s in stores:
         for i in items:
-            print(f"🔮 Forecasting future demand for Store {s}, Item {i}...")
+            print(f"Forecasting future demand for Store {s}, Item {i}...")
             fc = predict_future_for_store_item(df, s, i, xgb_model)
             all_results.append(fc)
 
@@ -109,8 +109,8 @@ def main():
 
     combined = pd.concat(all_results, ignore_index=True)
     combined.to_csv(OUTDIR / "future_demand_forecast.csv", index=False)
-    print(f"\n✅ Future forecasts saved to: {OUTDIR / 'future_demand_forecast.csv'}")
-    print(f"📊 Plots saved to: {OUTDIR}")
+    print(f"\nFuture forecasts saved to: {OUTDIR / 'future_demand_forecast.csv'}")
+    print(f"Plots saved to: {OUTDIR}")
 
 if __name__ == "__main__":
     main()

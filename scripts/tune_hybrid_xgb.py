@@ -22,9 +22,9 @@ OUTDIR.mkdir(parents=True, exist_ok=True)
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
 # ========= LOAD DATA =========
-print("📦 Loading hybrid training dataset...")
+print("Loading hybrid training dataset...")
 df = pd.read_csv(DATA_PATH, parse_dates=["date"])
-print(f"✅ Loaded {len(df):,} rows.")
+print(f"Loaded {len(df):,} rows.")
 
 # ========= PREPARE FEATURES =========
 features = ["yhat", "dayofweek", "month", "year", "lag_1", "lag_7", "rolling_mean_7", "rolling_std_7"]
@@ -67,19 +67,19 @@ grid_search.fit(X, y)
 best_model = grid_search.best_estimator_
 best_params = grid_search.best_params_
 
-print("\n🏆 Best Parameters Found:")
+print("\nBest Parameters Found:")
 for k, v in best_params.items():
     print(f"  {k}: {v}")
 
 # ========= EVALUATE BEST MODEL =========
 y_pred = best_model.predict(X)
 mape = mean_absolute_percentage_error(y, y_pred) * 100
-print(f"\n📈 Training MAPE (residual prediction): {mape:.2f}%")
+print(f"\nTraining MAPE (residual prediction): {mape:.2f}%")
 
 # ========= SAVE RESULTS =========
 joblib.dump(best_model, MODEL_DIR / "hybrid_xgb_tuned.pkl")
 pd.DataFrame([best_params]).to_csv(OUTDIR / "best_xgb_params.csv", index=False)
-print(f"💾 Tuned model saved to: {MODEL_DIR / 'hybrid_xgb_tuned.pkl'}")
-print(f"📊 Best params saved to: {OUTDIR / 'best_xgb_params.csv'}")
+print(f"Tuned model saved to: {MODEL_DIR / 'hybrid_xgb_tuned.pkl'}")
+print(f"Best params saved to: {OUTDIR / 'best_xgb_params.csv'}")
 
-print("\n✨ XGBoost tuning complete!")
+print("\nXGBoost tuning complete!")

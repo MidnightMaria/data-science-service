@@ -30,7 +30,7 @@ def evaluate(y_true, y_pred):
     return mae, rmse, mape
 
 def main():
-    print("📦 Loading hybrid dataset...")
+    print("Loading hybrid dataset...")
     df = pd.read_csv(DATA_PATH, parse_dates=["date"])
     features = ["dayofweek", "month", "lag_1", "lag_7", "rolling_mean_7"]
     
@@ -78,15 +78,15 @@ def main():
                 "Hybrid_MAPE": hybrid_mape,
             })
             
-            print(f"🏪 Store {s}, Item {i} — Prophet MAPE: {prophet_mape:.2f}% | Hybrid MAPE: {hybrid_mape:.2f}%")
+            print(f"Store {s}, Item {i} — Prophet MAPE: {prophet_mape:.2f}% | Hybrid MAPE: {hybrid_mape:.2f}%")
 
     results_df = pd.DataFrame(all_results)
     results_df.to_csv(OUTDIR / "hybrid_vs_prophet_metrics.csv", index=False)
-    print(f"\n📊 Evaluation results saved to: {OUTDIR / 'hybrid_vs_prophet_metrics.csv'}")
+    print(f"\nEvaluation results saved to: {OUTDIR / 'hybrid_vs_prophet_metrics.csv'}")
 
     # Simpan model terakhir (optional)
     joblib.dump(model, MODELDIR / "hybrid_xgb_model.pkl")
-    print(f"💾 XGBoost model saved to: {MODELDIR / 'hybrid_xgb_model.pkl'}")
+    print(f"XGBoost model saved to: {MODELDIR / 'hybrid_xgb_model.pkl'}")
 
 if __name__ == "__main__":
     main()
