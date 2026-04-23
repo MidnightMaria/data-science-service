@@ -1,140 +1,194 @@
-import pandas as pd
+"""
+optimize_inventory.py
+---------------------
+Inventory optimization berbasis hasil forecast hybrid.
+
+Input:
+- data/processed/hybrid_test.csv
+- models/hybrid_xgb_tuned.pkl
+
+Output:
+- reports/inventory_optimization/inventory_policy_report.csv
+- reports/inventory_optimization/inventory_summary.json
+
+Konsep:
+1. Gunakan hybrid prediction untuk estimasi demand
+2. Gunakan forecast error sebagai pendekatan uncertainty
+3. Hitung Safety Stock, ROP, dan EOQ
+4. Simulasikan current stock secara lebih realistis
+"""
+
+from pathlib import Path
+import json
+import joblib
 import numpy as np
-import os
+import pandas as pd
+from sklearn.metrics import mean_squared_error
 
-# Configuration
+# ======================
+# CONFIG
+# ======================
+ROOT = Path(__file__).resolve().parents[1]
 
-Z = 1.65            # Z-score for 95% service level
-ORDERING_COST = 50  # ordering cost per order
-HOLDING_COST = 2    # holding cost per unit per year
-LEAD_TIME_DAYS = 7  # lead time in days
+TEST_PATH = ROOT / "data" / "processed" / "hybrid_test.csv"
+MODEL_PATH = ROOT / "models" / "hybrid_xgb_tuned.pkl"
+
+OUTDIR = ROOT / "reports" / "inventory_optimization"
+OUTDIR.mkdir(parents=True, exist_ok=True)
+
+REPORT_PATH = OUTDIR / "inventory_policy_report.csv"
+SUMMARY_PATH = OUTDIR / "inventory_summary.json"
+
+# Inventory assumptions
+LEAD_TIME_DAYS = 7
+SERVICE_LEVEL_Z = 1.65   # 95%
+ORDERING_COST = 50.0
+HOLDING_COST = 2.0
 DAYS_IN_YEAR = 365
 
-# Paths
+# Simulasi stok realistis
+# artinya current stock diasumsikan setara dengan 3–14 hari demand rata-rata
+STOCK_COVERAGE_MIN_DAYS = 3
+STOCK_COVERAGE_MAX_DAYS = 14
+RANDOM_SEED = 42
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-input_path = os.path.join(BASE_DIR, "reports", "forecast", "future_demand_forecast.csv")
-output_dir = os.path.join(BASE_DIR, "reports", "optimization")
-
-os.makedirs(output_dir, exist_ok=True)
-
-output_path = os.path.join(output_dir, "inventory_optimization_report.csv")
-
-print("Loading forecast data...")
-df = pd.read_csv(input_path)
-
-
-# Validate Columns
-
-
-if "hybrid_forecast" not in df.columns:
-    raise ValueError("Column 'hybrid_forecast' not found in forecast data")
-
-
-# Aggregate Demand Forecast
-
-
-print("Aggregating demand...")
-
-agg = (
-    df.groupby(["store", "item"])["hybrid_forecast"]
-    .agg(["mean", "std", "sum"])
-    .reset_index()
-    .rename(columns={
-        "mean": "mean_demand",
-        "std": "std_demand",
-        "sum": "total_demand"
-    })
-)
-
-
-# Inventory Calculations
-
-
-print("Calculating Safety Stock, ROP, EOQ...")
-
-# Safety Stock
-agg["safety_stock"] = Z * agg["std_demand"] * np.sqrt(LEAD_TIME_DAYS)
-
-# Reorder Point
-agg["reorder_point"] = (agg["mean_demand"] * LEAD_TIME_DAYS) + agg["safety_stock"]
-
-# Annual Demand
-agg["annual_demand"] = agg["mean_demand"] * DAYS_IN_YEAR
-
-# EOQ
-agg["eoq"] = np.sqrt((2 * agg["annual_demand"] * ORDERING_COST) / HOLDING_COST)
-
-# Optimal Stock Level
-agg["optimal_stock_level"] = agg["reorder_point"] + agg["eoq"]
-
-
-# Decision Support Logic
-
-
-print("Generating decision support recommendations...")
-
-
-# Simulated Current Stock
-
-
-np.random.seed(42)
-
-stock_min = (agg["reorder_point"] * 0.5).astype(int)
-stock_max = (agg["optimal_stock_level"] * 1.2).astype(int)
-
-agg["current_stock"] = [
-    np.random.randint(low, high)
-    for low, high in zip(stock_min, stock_max)
+FEATURES = [
+    "yhat", "dayofweek", "month", "year", "dayofmonth", "is_weekend",
+    "store_id", "item_id",
+    "lag_yhat_1", "lag_yhat_7",
+    "rolling_yhat_mean_7", "rolling_yhat_std_7",
+    "lag_sales_1", "lag_sales_7",
+    "rolling_sales_mean_7", "rolling_sales_std_7"
 ]
 
-# Status determination
-agg["status"] = np.where(
-    agg["current_stock"] <= agg["reorder_point"],
-    "ORDER NOW",
-    np.where(
-        agg["current_stock"] > agg["optimal_stock_level"],
-        "OVERSTOCK",
-        "SAFE"
-    )
-)
 
-agg["risk_level"] = np.where(
-    agg["current_stock"] < agg["reorder_point"] * 0.7,
-    "CRITICAL",
-    np.where(
-        agg["current_stock"] <= agg["reorder_point"],
-        "LOW STOCK",
-        "NORMAL"
-    )
-)
+def main():
+    print("Loading hybrid test data...")
+    df = pd.read_csv(TEST_PATH, parse_dates=["date"])
 
-# Recommended order quantity
-agg["recommended_order_qty"] = np.where(
-    agg["status"] == "ORDER NOW",
-    np.maximum(agg["eoq"], agg["optimal_stock_level"] - agg["current_stock"]),
-    0
-)
+    print("Loading tuned hybrid model...")
+    model = joblib.load(MODEL_PATH)
 
-# Cost Estimation
+    rng = np.random.default_rng(RANDOM_SEED)
 
-agg["holding_cost_est"] = agg["current_stock"] * HOLDING_COST
-agg["ordering_cost_est"] = np.where(
-    agg["status"] == "ORDER NOW",
-    ORDERING_COST,
-    0
-)
+    # ======================
+    # BUILD HYBRID PREDICTION
+    # ======================
+    X = df[FEATURES]
+    df["residual_pred"] = model.predict(X)
+    df["hybrid_pred"] = df["yhat"] + df["residual_pred"]
 
-agg["total_cost_est"] = agg["holding_cost_est"] + agg["ordering_cost_est"]
+    # Forecast demand tidak boleh negatif
+    df["hybrid_pred"] = df["hybrid_pred"].clip(lower=0)
 
-# Cleanup and Save
+    # Forecast error
+    df["forecast_error"] = df["sales"] - df["hybrid_pred"]
 
-agg = agg.round(2)
+    # ======================
+    # AGGREGATE PER SERIES
+    # ======================
+    results = []
 
-agg.to_csv(output_path, index=False)
+    for (store, item), group in df.groupby(["store", "item"]):
+        group = group.sort_values("date").copy()
 
-print(f"Inventory optimization report saved to: {output_path}")
+        actual = group["sales"].values
+        pred = group["hybrid_pred"].values
 
-print("Sample preview:")
-print(agg.head(10))
+        # Mean daily demand dari hybrid forecast
+        mean_daily_demand = float(np.mean(pred))
+
+        # RMSE sebagai pendekatan uncertainty
+        rmse = float(np.sqrt(mean_squared_error(actual, pred)))
+
+        # Safety Stock
+        safety_stock = SERVICE_LEVEL_Z * rmse * np.sqrt(LEAD_TIME_DAYS)
+
+        # Reorder Point
+        reorder_point = (mean_daily_demand * LEAD_TIME_DAYS) + safety_stock
+
+        # Annual demand untuk EOQ
+        annual_demand = mean_daily_demand * DAYS_IN_YEAR
+
+        # EOQ
+        if HOLDING_COST > 0:
+            eoq = float(np.sqrt((2 * annual_demand * ORDERING_COST) / HOLDING_COST))
+        else:
+            eoq = np.nan
+
+        # ======================
+        # REALISTIC CURRENT STOCK SIMULATION
+        # ======================
+        # Stok disimulasikan sebagai coverage 3–14 hari demand
+        coverage_days = float(rng.uniform(STOCK_COVERAGE_MIN_DAYS, STOCK_COVERAGE_MAX_DAYS))
+        current_stock_proxy = float(mean_daily_demand * coverage_days)
+
+        # Inventory status
+        if current_stock_proxy <= reorder_point:
+            inventory_status = "REORDER"
+        else:
+            inventory_status = "SAFE"
+
+        # Opsional: beri indikasi berapa banyak perlu order
+        reorder_qty = max(eoq, reorder_point - current_stock_proxy) if inventory_status == "REORDER" else 0.0
+
+        results.append({
+            "store": int(store),
+            "item": int(item),
+
+            "mean_daily_demand": round(mean_daily_demand, 4),
+            "rmse_forecast": round(rmse, 4),
+
+            "lead_time_days": LEAD_TIME_DAYS,
+            "service_level_z": SERVICE_LEVEL_Z,
+
+            "safety_stock": round(float(safety_stock), 4),
+            "reorder_point": round(float(reorder_point), 4),
+            "annual_demand": round(float(annual_demand), 4),
+            "eoq": round(float(eoq), 4),
+
+            "stock_coverage_days": round(coverage_days, 4),
+            "current_stock_proxy": round(current_stock_proxy, 4),
+            "inventory_status": inventory_status,
+            "recommended_order_qty": round(float(reorder_qty), 4)
+        })
+
+    result_df = pd.DataFrame(results).sort_values(["store", "item"]).reset_index(drop=True)
+    result_df.to_csv(REPORT_PATH, index=False)
+
+    # ======================
+    # SUMMARY
+    # ======================
+    n_reorder = int((result_df["inventory_status"] == "REORDER").sum())
+    n_safe = int((result_df["inventory_status"] == "SAFE").sum())
+
+    summary = {
+        "n_series": int(len(result_df)),
+        "lead_time_days": LEAD_TIME_DAYS,
+        "service_level_z": SERVICE_LEVEL_Z,
+        "stock_coverage_min_days": STOCK_COVERAGE_MIN_DAYS,
+        "stock_coverage_max_days": STOCK_COVERAGE_MAX_DAYS,
+        "avg_mean_daily_demand": float(result_df["mean_daily_demand"].mean()),
+        "avg_rmse_forecast": float(result_df["rmse_forecast"].mean()),
+        "avg_safety_stock": float(result_df["safety_stock"].mean()),
+        "avg_reorder_point": float(result_df["reorder_point"].mean()),
+        "avg_eoq": float(result_df["eoq"].mean()),
+        "avg_current_stock_proxy": float(result_df["current_stock_proxy"].mean()),
+        "n_reorder": n_reorder,
+        "n_safe": n_safe,
+        "pct_reorder": float((n_reorder / len(result_df)) * 100.0),
+        "pct_safe": float((n_safe / len(result_df)) * 100.0),
+    }
+
+    with open(SUMMARY_PATH, "w", encoding="utf-8") as f:
+        json.dump(summary, f, indent=2, ensure_ascii=False)
+
+    print("\nDone.")
+    print(f"Inventory policy report saved to: {REPORT_PATH}")
+    print(f"Inventory summary saved to: {SUMMARY_PATH}")
+    print("\nSummary:")
+    print(summary)
+
+
+if __name__ == "__main__":
+    main()

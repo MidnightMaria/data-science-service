@@ -1,0 +1,17 @@
+{
+  "n_series": 500,
+  "lead_time_days": 7,
+  "service_level_z": 1.65,
+  "stock_coverage_min_days": 3,
+  "stock_coverage_max_days": 14,
+  "avg_mean_daily_demand": 54.38114379999999,
+  "avg_rmse_forecast": 7.4680472,
+  "avg_safety_stock": 32.601675799999995,
+  "avg_reorder_point": 413.2696862,
+  "avg_eoq": 968.8055872,
+  "avg_current_stock_proxy": 458.6342746,
+  "n_reorder": 207,
+  "n_safe": 293,
+  "pct_reorder": 41.4,
+  "pct_safe": 58.599999999999994
+}

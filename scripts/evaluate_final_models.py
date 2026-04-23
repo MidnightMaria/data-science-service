@@ -1,71 +1,147 @@
 """
 evaluate_final_models.py
-------------------------
-Membandingkan Prophet, Hybrid, dan Hybrid Tuned XGBoost
+-----------------------
+Final evaluation di TEST SET (NO LEAKAGE)
+
+Input:
+- hybrid_test.csv
+- hybrid_xgb_tuned.pkl
+
+Output:
+- test_metrics.csv
+- test_summary.json
 """
 
 from pathlib import Path
-import pandas as pd
-import numpy as np
+import json
 import joblib
+import numpy as np
+import pandas as pd
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
+# ======================
+# PATH
+# ======================
 ROOT = Path(__file__).resolve().parents[1]
-HYBRID_METRICS = ROOT / "reports" / "hybrid_evaluation" / "hybrid_vs_prophet_metrics.csv"
-TUNED_MODEL = ROOT / "models" / "hybrid_xgb_tuned.pkl"
-HYBRID_TRAIN = ROOT / "data" / "processed" / "hybrid_train.csv"
-OUTDIR = ROOT / "reports" / "final_evaluation"
+
+TEST_PATH = ROOT / "data/processed/hybrid_test.csv"
+MODEL_PATH = ROOT / "models/hybrid_xgb_tuned.pkl"
+
+OUTDIR = ROOT / "reports/final_evaluation"
 OUTDIR.mkdir(parents=True, exist_ok=True)
 
+METRICS_PATH = OUTDIR / "test_metrics.csv"
+SUMMARY_PATH = OUTDIR / "test_summary.json"
+
+# ======================
+# FEATURES
+# ======================
+FEATURES = [
+    "yhat","dayofweek","month","year","dayofmonth","is_weekend",
+    "store_id","item_id",
+    "lag_yhat_1","lag_yhat_7",
+    "rolling_yhat_mean_7","rolling_yhat_std_7",
+    "lag_sales_1","lag_sales_7",
+    "rolling_sales_mean_7","rolling_sales_std_7"
+]
+
+# ======================
+# METRICS
+# ======================
+def safe_mape(y_true, y_pred):
+    denom = np.maximum(np.abs(y_true), 1)
+    return np.mean(np.abs((y_true - y_pred) / denom)) * 100
+
+def smape(y_true, y_pred):
+    denom = np.abs(y_true) + np.abs(y_pred)
+    denom = np.where(denom == 0, 1, denom)
+    return np.mean(2.0 * np.abs(y_true - y_pred) / denom) * 100
+
+def evaluate(y_true, y_pred):
+    return {
+        "MAE": float(mean_absolute_error(y_true, y_pred)),
+        "RMSE": float(np.sqrt(mean_squared_error(y_true, y_pred))),
+        "MAPE": float(safe_mape(y_true, y_pred)),
+        "SMAPE": float(smape(y_true, y_pred)),
+    }
+
+# ======================
+# MAIN
+# ======================
 def main():
-    print("Loading data and tuned model...")
-    df = pd.read_csv(HYBRID_TRAIN, parse_dates=["date"])
-    metrics = pd.read_csv(HYBRID_METRICS)
-    model = joblib.load(TUNED_MODEL)
+    print("Loading test data...")
+    df = pd.read_csv(TEST_PATH, parse_dates=["date"])
 
-    print("Evaluating tuned hybrid model performance...")
+    print("Loading trained model...")
+    model = joblib.load(MODEL_PATH)
+
+    X = df[FEATURES]
+    y_true = df["sales"].values
+
+    # Prophet baseline
+    yhat_prophet = df["yhat"].values
+
+    # Hybrid prediction
+    residual_pred = model.predict(X)
+    yhat_hybrid = yhat_prophet + residual_pred
+
+    # ======================
+    # GLOBAL METRICS
+    # ======================
+    prophet_metrics = evaluate(y_true, yhat_prophet)
+    hybrid_metrics = evaluate(y_true, yhat_hybrid)
+
+    print("\nFINAL TEST RESULTS")
+    print("Prophet:", prophet_metrics)
+    print("Hybrid :", hybrid_metrics)
+
+    # ======================
+    # PER SERIES
+    # ======================
+    df["prophet_pred"] = yhat_prophet
+    df["hybrid_pred"] = yhat_hybrid
+
     results = []
+
     for (store, item), group in df.groupby(["store", "item"]):
-        group = group.sort_values("date")
-        train = group.iloc[:-90]
-        val = group.iloc[-90:]
+        y = group["sales"].values
+        p = group["prophet_pred"].values
+        h = group["hybrid_pred"].values
 
-        features = ["yhat", "dayofweek", "month", "year", "lag_1", "lag_7", "rolling_mean_7", "rolling_std_7"]
-
-        # Pastikan kolom yang dibutuhkan ada
-        if "rolling_std_7" not in val.columns:
-            val["rolling_std_7"] = val.groupby(["store", "item"])["sales"].shift(1).rolling(7).std().reset_index(level=[0,1], drop=True)
-        if "year" not in val.columns:
-            val["year"] = val["date"].dt.year
-
-        X_val = val[features]
-        y_true = val["sales"].values
-        yhat_prophet = val["yhat"].values
-        yhat_tuned_resid = model.predict(X_val)
-
-        # Hybrid Tuned prediction
-        yhat_final = yhat_prophet + yhat_tuned_resid
-
-
-        mae = mean_absolute_error(y_true, yhat_final)
-        rmse = np.sqrt(mean_squared_error(y_true, yhat_final))
-        mape = np.mean(np.abs((y_true - yhat_final) / y_true)) * 100
+        pm = evaluate(y, p)
+        hm = evaluate(y, h)
 
         results.append({
-            "store": store,
-            "item": item,
-            "Hybrid_Tuned_MAE": mae,
-            "Hybrid_Tuned_RMSE": rmse,
-            "Hybrid_Tuned_MAPE": mape
+            "store": int(store),
+            "item": int(item),
+
+            "Prophet_SMAPE": pm["SMAPE"],
+            "Hybrid_SMAPE": hm["SMAPE"],
+            "SMAPE_Improvement": pm["SMAPE"] - hm["SMAPE"]
         })
 
-    result_df = pd.DataFrame(results)
-    merged = metrics.merge(result_df, on=["store", "item"], how="left")
-    merged.to_csv(OUTDIR / "final_model_comparison.csv", index=False)
+    results_df = pd.DataFrame(results)
+    results_df.to_csv(METRICS_PATH, index=False)
 
-    print(f"Final comparison saved to: {OUTDIR / 'final_model_comparison.csv'}")
-    print("Sample preview:")
-    print(merged.head())
+    improved = (results_df["SMAPE_Improvement"] > 0).sum()
+    total = len(results_df)
+
+    summary = {
+        "global_prophet": prophet_metrics,
+        "global_hybrid": hybrid_metrics,
+        "series_improved": int(improved),
+        "total_series": int(total),
+        "improvement_pct": float(improved / total * 100)
+    }
+
+    with open(SUMMARY_PATH, "w") as f:
+        json.dump(summary, f, indent=2)
+
+    print("\nSeries improved:", improved, "/", total,
+          f"({improved/total*100:.2f}%)")
+
+    print("\nDone.")
+    print("Saved to:", OUTDIR)
 
 if __name__ == "__main__":
     main()

@@ -1,75 +1,80 @@
 """
 plot_final_evaluation.py
-------------------------
-Visualisasi perbandingan Prophet vs Hybrid vs Hybrid Tuned
+-----------------------
+Visualisasi hasil forecasting untuk laporan
 """
 
 from pathlib import Path
+import json
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# ======================
+# PATH
+# ======================
 ROOT = Path(__file__).resolve().parents[1]
-EVAL_PATH = ROOT / "reports" / "final_evaluation" / "final_model_comparison.csv"
-OUTDIR = ROOT / "reports" / "final_evaluation"
+
+BASELINE_PATH = ROOT / "reports/baseline_comparison/baseline_summary.json"
+FINAL_PATH = ROOT / "reports/final_evaluation/test_metrics.csv"
+
+OUTDIR = ROOT / "reports/plots"
 OUTDIR.mkdir(parents=True, exist_ok=True)
 
-def main():
-    print("📊 Loading evaluation results...")
-    df = pd.read_csv(EVAL_PATH)
+# ======================
+# LOAD DATA
+# ======================
+with open(BASELINE_PATH) as f:
+    baseline = json.load(f)
 
-    # Hitung rata-rata MAPE tiap model
-    avg_prophet = df["Prophet_MAPE"].mean()
-    avg_hybrid = df["Hybrid_MAPE"].mean()
-    avg_tuned = df["Hybrid_Tuned_MAPE"].mean()
+df = pd.read_csv(FINAL_PATH)
 
-    print(f"Prophet avg MAPE: {avg_prophet:.2f}%")
-    print(f"Hybrid avg MAPE: {avg_hybrid:.2f}%")
-    print(f"Tuned Hybrid avg MAPE: {avg_tuned:.2f}%")
+# ======================
+# 1. BAR CHART (SMAPE)
+# ======================
+models = list(baseline.keys())
+smape_values = [baseline[m]["SMAPE"] for m in models]
 
-    # Hitung improvement per item
-    df["Improvement_Hybrid_vs_Prophet"] = df["Prophet_MAPE"] - df["Hybrid_MAPE"]
-    df["Improvement_Tuned_vs_Hybrid"] = df["Hybrid_MAPE"] - df["Hybrid_Tuned_MAPE"]
+plt.figure()
+plt.bar(models, smape_values)
+plt.title("Model Comparison (SMAPE)")
+plt.ylabel("SMAPE")
+plt.savefig(OUTDIR / "smape_comparison.png")
+plt.close()
 
-    improved_count = (df["Improvement_Tuned_vs_Hybrid"] > 0).sum()
-    total = len(df)
-    improved_pct = (improved_count / total) * 100
+# ======================
+# 2. HISTOGRAM IMPROVEMENT
+# ======================
+df["SMAPE_Improvement"] = df["Prophet_SMAPE"] - df["Hybrid_SMAPE"]
 
-    print(f"{improved_count}/{total} items improved ({improved_pct:.2f}%) after tuning.")
+plt.figure()
+plt.hist(df["SMAPE_Improvement"], bins=30)
+plt.title("SMAPE Improvement Distribution")
+plt.xlabel("Improvement")
+plt.savefig(OUTDIR / "improvement_hist.png")
+plt.close()
 
-    # Bar chart rata-rata MAPE per model
-    plt.figure(figsize=(6, 4))
-    plt.bar(["Prophet", "Hybrid", "Hybrid Tuned"], [avg_prophet, avg_hybrid, avg_tuned], color=["#e6a5a1", "#a7c7e7", "#f3d1a9"])
-    plt.title("Average MAPE Comparison")
-    plt.ylabel("MAPE (%)")
-    plt.tight_layout()
-    plt.savefig(OUTDIR / "avg_mape_comparison.png", dpi=150)
-    plt.close()
+# ======================
+# 3. SCATTER PLOT
+# ======================
+plt.figure()
+plt.scatter(df["Prophet_SMAPE"], df["Hybrid_SMAPE"])
+plt.xlabel("Prophet SMAPE")
+plt.ylabel("Hybrid SMAPE")
+plt.title("Prophet vs Hybrid")
 
-    # Line chart tren per model (contoh untuk 10 item pertama)
-    plt.figure(figsize=(10, 5))
-    subset = df.head(10)
-    plt.plot(subset["item"], subset["Prophet_MAPE"], marker="o", label="Prophet", color="#e6a5a1")
-    plt.plot(subset["item"], subset["Hybrid_MAPE"], marker="o", label="Hybrid", color="#a7c7e7")
-    plt.plot(subset["item"], subset["Hybrid_Tuned_MAPE"], marker="o", label="Hybrid Tuned", color="#f3d1a9")
-    plt.title("MAPE per Item (Top 10)")
-    plt.xlabel("Item")
-    plt.ylabel("MAPE (%)")
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(OUTDIR / "mape_per_item_trend.png", dpi=150)
-    plt.close()
+# diagonal line
+plt.plot([0, 25], [0, 25])
 
-    # Histogram improvement
-    plt.figure(figsize=(6,4))
-    plt.hist(df["Improvement_Tuned_vs_Hybrid"], bins=15, color="#f3d1a9", edgecolor="black")
-    plt.title("Distribution of Improvement (Tuned vs Hybrid)")
-    plt.xlabel("MAPE Improvement (%)")
-    plt.ylabel("Number of Items")
-    plt.tight_layout()
-    plt.savefig(OUTDIR / "improvement_distribution.png", dpi=150)
-    plt.close()
+plt.savefig(OUTDIR / "scatter.png")
+plt.close()
 
-    print(f" Visualizations saved to: {OUTDIR}")
+# ======================
+# 4. TOP & WORST SERIES
+# ======================
+best = df.sort_values("SMAPE_Improvement", ascending=False).head(10)
+worst = df.sort_values("SMAPE_Improvement").head(10)
 
-if __name__ == "__main__":
-    main()
+best.to_csv(OUTDIR / "best_series.csv", index=False)
+worst.to_csv(OUTDIR / "worst_series.csv", index=False)
+
+print("Plots saved to:", OUTDIR)

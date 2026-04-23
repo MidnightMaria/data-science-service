@@ -1,0 +1,27 @@
+{
+  "train_rows": 819500,
+  "val_rows": 45000,
+  "n_series": 500,
+  "global_prophet_metrics": {
+    "MAE": 6.849854125735032,
+    "RMSE": 8.94451487183887,
+    "MAPE": 11.713293891305975,
+    "SMAPE": 11.48285715159104
+  },
+  "global_hybrid_metrics": {
+    "MAE": 6.51323651003746,
+    "RMSE": 8.446601524592813,
+    "MAPE": 11.388875575651749,
+    "SMAPE": 11.06662098561643
+  },
+  "avg_prophet_mae": 6.849854125735032,
+  "avg_prophet_rmse": 8.622367309891203,
+  "avg_prophet_mape": 11.713293891305975,
+  "avg_prophet_smape": 11.482857151591041,
+  "avg_hybrid_mae": 6.51323651003746,
+  "avg_hybrid_rmse": 8.178853267083232,
+  "avg_hybrid_mape": 11.388875575651747,
+  "avg_hybrid_smape": 11.066620985616431,
+  "series_improved_on_smape": 443,
+  "series_improved_on_smape_pct": 88.6
+}
